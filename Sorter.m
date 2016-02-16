@@ -59,6 +59,19 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+if exist(getSettingsPath,'file')
+    load(getSettingsPath);
+    set(handles.textStatus,'string','Saved settings loaded');
+else
+    defaultSettings;
+    if ~exist('settings','dir'); mkdir('settings'); end
+    save(getSettingsPath,'settings');
+    set(handles.textStatus,'string','Default settings loaded');
+end
+set(handles.Animal,'string',settings.animal);
+set(handles.Unit,'string',settings.unit);
+set(handles.Exp,'string',settings.experiment);
+set(handles.DotSize,'string',num2str(settings.sorterDotSize));
 
 
 % UIWAIT makes Sorter wait for user response (see UIRESUME)
@@ -548,8 +561,8 @@ function pushbutton5_Callback(hObject, eventdata, handles)
 global Analyzer  Spikes UnitType Events Mapping
 
 % Save Sort File
-save(['out\SpikesEphys\' get(handles.Animal,'string') '_' get(handles.Unit,'string') '-' get(handles.Exp,'string') ' ' 'Spikes'],'Spikes','UnitType','-append')
-
+load(getSettingsPath);
+save([settings.spikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
 % Analyze responses
 
 Params = Analyzer.L.param{1,1};
@@ -638,9 +651,20 @@ for i = 1:length(Paramss(1,:))
     Variables{i} =Params{1,1};
     Values{i} = eval(Params{1,2});
 end
-save(['out/AnalyzedEphys/' get(handles.Animal,'string') '_' get(handles.Unit,'string') '-' get(handles.Exp,'string') ' ' 'Data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+save([settings.dataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
 
 
+    choice = questdlg('Do you want to save this record in the summary file?', ...
+        'Summary file save', ...
+        'Yes','No','Yes');
+
+    switch choice
+        case 'Yes'
+            set(handles.textStatus,'string','Saving record in summary file. Please go to command window to enter details.');
+        case 'No'
+            set(handles.textStatus,'string','Finished processing. Spikes updated. Data file saved.');
+            return;
+    end
 
 % Write Table
 
@@ -648,14 +672,13 @@ if length(UnitType)>1
     warndlg('Table writting not programmed for more than one site')
     return
 end
-FileName = 'Ephys Data.xlsx';
-Path = 'C:\Users\Nielsen Lab\Documents\';
-[num,txt,raw] = xlsread([Path FileName],1);
+
+[num,txt,raw] = xlsread(settings.summaryFileFullPath,1);
 Rows = [];
 for i = 1:length(raw(:,1))
-if isequal(raw(i,3),{[get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
-Rows = [Rows i];
-end
+    if isequal(raw(i,3),{[get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
+        Rows = [Rows i];
+    end
 end
 if isempty(Rows)
     errordlg('Experiment has not been added to table yet')
@@ -685,7 +708,9 @@ for i = 1:length(UnitType{1})
     Cont = sum(ISI<45)/length(ISI);
     raw(Rows(1)+i-1,9) = {Cont};
 end
-xlswrite([Path FileName],raw,1)
+xlswrite([Path FileName],raw,1);
+set(handles.textStatus,'string','Finished processing. Spikes/summary file updated. Data file saved.');
+
 % hObject    handle to pushbutton5 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -1021,7 +1046,9 @@ function Animal_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Animal as text
 %        str2double(get(hObject,'String')) returns contents of Animal as a double
-
+load(getSettingsPath);
+settings.animal = get(hObject,'String');
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function Animal_CreateFcn(hObject, eventdata, handles)
@@ -1044,7 +1071,9 @@ function Unit_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Unit as text
 %        str2double(get(hObject,'String')) returns contents of Unit as a double
-
+load(getSettingsPath);
+settings.unit = get(hObject,'String');
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function Unit_CreateFcn(hObject, eventdata, handles)
@@ -1067,7 +1096,9 @@ function Exp_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Exp as text
 %        str2double(get(hObject,'String')) returns contents of Exp as a double
-
+load(getSettingsPath);
+settings.experiment = get(hObject,'String');
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function Exp_CreateFcn(hObject, eventdata, handles)
@@ -1084,10 +1115,23 @@ end
 
 % --- Executes on button press in LoadSpks.
 function LoadSpks_Callback(hObject, eventdata, handles)
+
 clear UnitType Spikes PCs PC Mapping
 global UnitType Spikes PCs PC Mapping Events Analyzer
-eval(strcat('load(''','out\SpikesEphys\',get(handles.Animal,'string'),'_',get(handles.Unit,'string'),'-',get(handles.Exp,'string'),' Spikes.mat'',''-mat'')'))
-eval(strcat('load(''Z:\Ephys\AnalyzerFiles\',get(handles.Animal,'string'), '\', get(handles.Animal,'string'),'_',get(handles.Unit,'string'),'_',get(handles.Exp,'string'),'.analyzer'',''-mat'')'))
+
+load(getSettingsPath);
+
+animal = get(handles.Animal,'string');
+unit = get(handles.Unit,'string');
+experiment = get(handles.Exp,'string');
+
+fullFileName = [animal '_' unit '_' experiment];
+
+analyzerFullPath = [settings.analyzerPath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
+spikeFileFullPath = [settings.spikeFilePath settings.filepathSlash fullFileName '_spikes.mat'];
+
+load(analyzerFullPath,'-mat');
+load(spikeFileFullPath);
 
 SiteMenuStr{1} = 'site';
 for i = 1:length(Spikes)
@@ -1099,9 +1143,7 @@ set(handles.UnitMenu,'Value',1);
 
 PCs = [1 1];
 PC = 0;
-% hObject    handle to LoadSpks (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 
 
 % --- Executes on selection change in SiteMenu.
@@ -1164,7 +1206,9 @@ function DotSize_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of DotSize as text
 %        str2double(get(hObject,'String')) returns contents of DotSize as a double
-
+load(getSettingsPath);
+settings.sorterDotSize = str2double(get(hObject,'String'));
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function DotSize_CreateFcn(hObject, eventdata, handles)
@@ -1176,4 +1220,11 @@ function DotSize_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+function settingsPath = getSettingsPath
+if ispc
+    settingsPath = 'settings\currSettings.mat';
+else
+    settingsPath = 'settings/currSettings.mat';
 end
