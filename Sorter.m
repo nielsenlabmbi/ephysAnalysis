@@ -1144,6 +1144,8 @@ set(handles.UnitMenu,'Value',1);
 PCs = [1 1];
 PC = 0;
 
+set(handles.textStatus,'string','Spikes file loaded');
+
 
 
 % --- Executes on selection change in SiteMenu.

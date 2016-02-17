@@ -178,12 +178,12 @@ experiment = get(handles.experiment,'string');
 fullFileName = [animal '_' unit '_' experiment];
 
 analyzerFullPath = [analyzerpath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
-dataFullPath = [path settings.filepathSlash animal settings.filepathSlash unit '_' experiment settings.filepathSlash fullFileName];
+rawDataFullPath = [path settings.filepathSlash animal settings.filepathSlash unit '_' experiment settings.filepathSlash fullFileName];
 
 load(analyzerFullPath,'-mat');
-openNSx([dataFullPath '.ns3']);
-openNSx([dataFullPath '.ns6']);
-NEV = openNEV([settings.nevFilePrefix dataFullPath '.nev']);
+openNSx([rawDataFullPath '.ns3']);
+openNSx([rawDataFullPath '.ns6']);
+NEV = openNEV([settings.nevFilePrefix rawDataFullPath '.nev']);
 
 % load(['Z:\Ephys\AnalyzerFiles\',get(handles.animal,'string'), '\', get(handles.animal,'string'),'_',get(handles.unit,'string'),'_',get(handles.experiment,'string'),'.analyzer'],'-mat');
 % openNSx(['Z:\Ephys\' get(handles.animal,'string') '\' get(handles.unit,'string') '_' get(handles.experiment,'string') '\' get(handles.animal,'string') '_' get(handles.unit,'string') '_' get(handles.experiment,'string') '.ns6']);
@@ -207,7 +207,7 @@ for i = 1:length(NS6.Data(:,1));
     Mapping{i,2} = 1;
     Thresholds(i) = mean(NS6.Data(i,:)) - std(NS6.Data(i,:))*3;
 end
-disp('Done filtering'); set(handles.textStatus,'string','Done filtering');
+disp('Done filtering'); set(handles.textStatus,'string','Done filtering'); drawnow
 set(handles.Chs,'String',ChStr);
 set(handles.Mapping,'Data',Mapping);
 d = figure;

@@ -22,7 +22,7 @@ function varargout = AnalyzeSpikes(varargin)
 
 % Edit the above text to modify the response to help AnalyzeSpikes
 
-% Last Modified by GUIDE v2.5 17-Sep-2015 16:55:26
+% Last Modified by GUIDE v2.5 16-Feb-2016 15:20:42
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,6 +59,20 @@ handles.output = hObject;
 guidata(hObject, handles);
 axes(handles.axes3)
 axis off
+
+if exist(getSettingsPath,'file')
+    load(getSettingsPath);
+    set(handles.textStatus,'string','Saved settings loaded');
+else
+    defaultSettings;
+    if ~exist('settings','dir'); mkdir('settings'); end
+    save(getSettingsPath,'settings');
+    set(handles.textStatus,'string','Default settings loaded');
+end
+
+set(handles.animal,'string',settings.animal);
+set(handles.funit,'string',settings.unit);
+set(handles.exp,'string',settings.experiment);
 
 % UIWAIT makes AnalyzeSpikes wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -656,7 +670,9 @@ function animal_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of animal as text
 %        str2double(get(hObject,'String')) returns contents of animal as a double
-
+load(getSettingsPath);
+settings.animal = get(hObject,'String');
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function animal_CreateFcn(hObject, eventdata, handles)
@@ -679,7 +695,9 @@ function funit_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of funit as text
 %        str2double(get(hObject,'String')) returns contents of funit as a double
-
+load(getSettingsPath);
+settings.unit = get(hObject,'String');
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function funit_CreateFcn(hObject, eventdata, handles)
@@ -702,7 +720,9 @@ function exp_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of exp as text
 %        str2double(get(hObject,'String')) returns contents of exp as a double
-
+load(getSettingsPath);
+settings.experiment = get(hObject,'String');
+save(getSettingsPath,'settings');
 
 % --- Executes during object creation, after setting all properties.
 function exp_CreateFcn(hObject, eventdata, handles)
@@ -721,9 +741,25 @@ end
 function LoadSpks_Callback(hObject, eventdata, handles)
 clear UnitType Data CondInfo Variables Values Analyzer Mapping
 global UnitType Data CondInfo Variables Values Analyzer Mapping Spikes
-eval(strcat('load(''','out\AnalyzedEphys\',get(handles.animal,'string'),'_',get(handles.funit,'string'),'-',get(handles.exp,'string'),' Data.mat'',''-mat'')'))
-eval(strcat('load(''','out\SpikesEphys\',get(handles.animal,'string'),'_',get(handles.funit,'string'),'-',get(handles.exp,'string'),' Spikes.mat'',''-mat'')'))
-eval(strcat('load(''Z:\Ephys\AnalyzerFiles\',get(handles.animal,'string'), '\', get(handles.animal,'string'),'_',get(handles.funit,'string'),'_',get(handles.exp,'string'),'.analyzer'',''-mat'')'))
+
+load(getSettingsPath);
+analyzerpath = settings.analyzerPath;
+animal = get(handles.animal,'string');
+unit = get(handles.funit,'string');
+experiment = get(handles.exp,'string');
+
+fullFileName = [animal '_' unit '_' experiment];
+
+analyzerFullPath = [analyzerpath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
+load(analyzerFullPath,'-mat');
+
+load([settings.dataFilePath settings.filepathSlash fullFileName '_data.mat'])
+load([settings.spikeFilePath settings.filepathSlash fullFileName '_spikes.mat'])
+
+% eval(strcat('load(''','out\AnalyzedEphys\',get(handles.animal,'string'),'_',get(handles.funit,'string'),'-',get(handles.exp,'string'),' Data.mat'',''-mat'')'))
+% eval(strcat('load(''','out\SpikesEphys\',get(handles.animal,'string'),'_',get(handles.funit,'string'),'-',get(handles.exp,'string'),' Spikes.mat'',''-mat'')'))
+% eval(strcat('load(''Z:\Ephys\AnalyzerFiles\',get(handles.animal,'string'), '\', get(handles.animal,'string'),'_',get(handles.funit,'string'),'_',get(handles.exp,'string'),'.analyzer'',''-mat'')'))
+
 SiteMenuStr{1} = 'site';
 for i = 1:length(Data)
     SiteMenuStr{i+1} = int2str(i);
@@ -775,4 +811,11 @@ function SiteMenu_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+function settingsPath = getSettingsPath
+if ispc
+    settingsPath = 'settings\currSettings.mat';
+else
+    settingsPath = 'settings/currSettings.mat';
 end
