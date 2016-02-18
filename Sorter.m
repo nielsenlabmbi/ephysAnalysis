@@ -22,7 +22,7 @@ function varargout = Sorter(varargin)
 
 % Edit the above text to modify the response to help Sorter
 
-% Last Modified by GUIDE v2.5 06-Oct-2015 12:14:44
+% Last Modified by GUIDE v2.5 18-Feb-2016 16:06:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -558,13 +558,52 @@ hold off
 
 % --- Executes on button press in pushbutton5.
 function pushbutton5_Callback(hObject, eventdata, handles)
-global Analyzer  Spikes UnitType Events Mapping
+saveSpikeDataFile(handles);
 
+% hObject    handle to pushbutton5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+function saveSpikeDataFile(handles)
+global Analyzer  Spikes UnitType Events Mapping ManuallyLoadedSpikeFilePath
 % Save Sort File
+msg = '';
+set(handles.textStatus,'string','Saving spike file...'); drawnow
 load(getSettingsPath);
-save([settings.spikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
-% Analyze responses
+if isempty(ManuallyLoadedSpikeFilePath)
+    save([settings.spikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    msg = [msg ' Spike file saved.'];
+else
+    choice = questdlg('This action will overwrite the manually loaded spike file. Continue?', ...
+	'Warning: File overwrite', ...
+	'Yes','No','No');
+    
+    switch choice
+        case 'Yes'
+            save([ManuallyLoadedSpikeFilePath.path ManuallyLoadedSpikeFilePath.filename], 'Spikes','UnitType','-append');
+        case 'No'
+            msg = [msg ' Spike file not saved.'];
+            set(handles.textStatus,'string',msg); drawnow
+            return;
+    end
+    
+    set(handles.textStatus,'string','Spike file saved. Waiting for analyzer file...'); drawnow
+    
+    [filename, pathname] = uigetfile( ...
+       {'*.mat;*.analyzer', 'All MATLAB Files (*.analyzer, *.mat)'; ...
+        '*.*',                   'All Files (*.*)'}, ...
+        'Pick analyzer file');
+    if isempty(filename) || isempty(pathname)    
+        set(handles.textStatus,'string','Analyzer file not found. Cannot format data.'); drawnow
+        return;
+    else
+        load([pathname filename],'-mat');
+    end
+end
 
+set(handles.textStatus,'string','Now formatting data...'); drawnow
+
+% Analyze responses
 Params = Analyzer.L.param{1,1};
 Reps = length(Analyzer.loops.conds{1,1}.repeats);
 BReps =length(Analyzer.loops.conds{1,end}.repeats);
@@ -651,8 +690,25 @@ for i = 1:length(Paramss(1,:))
     Variables{i} =Params{1,1};
     Values{i} = eval(Params{1,2});
 end
-save([settings.dataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
 
+set(handles.textStatus,'string','Formatting complete. Saving data file...');
+
+if isempty(ManuallyLoadedSpikeFilePath)
+    save([settings.dataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    msg = [msg ' Data file saved.'];
+    set(handles.textStatus,'string','Data file saved.');
+else
+    [filename, pathname] = uiputfile([ManuallyLoadedSpikeFilePath.filename(1:end-11) '_data.mat'],'Save data file as...');
+    if ~isequal(filename,0) && ~isequal(pathname,0)
+        save(fullfile(pathname,filename), 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+        msg = [msg ' Data file saved.'];
+        set(handles.textStatus,'string','Data file saved.');
+    else
+        msg = [msg ' Data file not saved.'];
+        set(handles.textStatus,'string','Data file not saved.');
+        return;
+    end
+end
 
     choice = questdlg('Do you want to save this record in the summary file?', ...
         'Summary file save', ...
@@ -660,9 +716,10 @@ save([settings.dataFilePath settings.filepathSlash get(handles.Animal,'string') 
 
     switch choice
         case 'Yes'
-            set(handles.textStatus,'string','Saving record in summary file. Please go to command window to enter details.');
+            set(handles.textStatus,'string','Saving record in summary file.');
         case 'No'
-            set(handles.textStatus,'string','Finished processing. Spikes updated. Data file saved.');
+            msg = [msg ' Summary file not saved.'];
+            set(handles.textStatus,'string',msg); drawnow
             return;
     end
 
@@ -709,12 +766,8 @@ for i = 1:length(UnitType{1})
     raw(Rows(1)+i-1,9) = {Cont};
 end
 xlswrite([Path FileName],raw,1);
-set(handles.textStatus,'string','Finished processing. Spikes/summary file updated. Data file saved.');
-
-% hObject    handle to pushbutton5 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+msg = [msg ' Summary file saved.'];
+set(handles.textStatus,'string',msg);
 
 
 function filename_Callback(hObject, eventdata, handles)
@@ -1116,10 +1169,12 @@ end
 % --- Executes on button press in LoadSpks.
 function LoadSpks_Callback(hObject, eventdata, handles)
 
-clear UnitType Spikes PCs PC Mapping
-global UnitType Spikes PCs PC Mapping Events Analyzer
+clear UnitType Spikes PCs PC Mapping ManuallyLoadedSpikeFilePath
+global UnitType Spikes PCs PC Mapping Events Analyzer ManuallyLoadedSpikeFilePath
 
 load(getSettingsPath);
+
+ManuallyLoadedSpikeFilePath = [];
 
 animal = get(handles.Animal,'string');
 unit = get(handles.Unit,'string');
@@ -1230,3 +1285,56 @@ if ispc
 else
     settingsPath = 'settings/currSettings.mat';
 end
+
+
+% --------------------------------------------------------------------
+function toolbarOpenButton_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to toolbarOpenButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+clear UnitType Spikes PCs PC Mapping ManuallyLoadedSpikeFilePath
+global UnitType Spikes PCs PC Mapping Events Analyzer ManuallyLoadedSpikeFilePath
+
+load(getSettingsPath);
+
+[filename, pathname] = uigetfile( ...
+       {'*.mat;*.spikes', 'All MATLAB Files (*.spikes, *.mat)'; ...
+        '*.*',                   'All Files (*.*)'}, ...
+        'Pick spikes file');
+
+if isempty(pathname) || isempty(filename)
+    return;
+end
+
+load([pathname filename]);
+
+ManuallyLoadedSpikeFilePath.filename = filename;
+ManuallyLoadedSpikeFilePath.path = pathname;
+
+% fullFileName = [animal '_' unit '_' experiment];
+% analyzerFullPath = [settings.analyzerPath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
+% spikeFileFullPath = [settings.spikeFilePath settings.filepathSlash fullFileName '_spikes.mat'];
+% 
+% load(analyzerFullPath,'-mat');
+% load(spikeFileFullPath);
+
+SiteMenuStr{1} = 'site';
+for i = 1:length(Spikes)
+    SiteMenuStr{i+1} = int2str(i);
+end
+set(handles.SiteMenu,'String',SiteMenuStr);
+set(handles.SiteMenu,'Value',1);
+set(handles.UnitMenu,'Value',1);
+
+PCs = [1 1];
+PC = 0;
+
+set(handles.textStatus,'string','Spikes file loaded');
+
+
+% --------------------------------------------------------------------
+function toolbarSaveButton_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to toolbarSaveButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+saveSpikeDataFile(handles)
