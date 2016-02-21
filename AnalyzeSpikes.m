@@ -64,12 +64,18 @@ if exist(getSettingsPath,'file')
     load(getSettingsPath);
     set(handles.textStatus,'string','Saved settings loaded');
 else
-    defaultSettings;
-    if ~exist('settings','dir'); mkdir('settings'); end
+    user = lower(input('Cannot find settings file. What is your name?: ','s'));
+    useSynologyRaw = input('Do you want to use the Synology drive for getting raw data? (1=yes, 0=no): ');
+    disp('Creating required folder structures and setting files. Please check, reconfirm and manually reconfigure folders by editing the settings.mat file. Also, please create outShare folder structure manually.');
+    settings = defaultSettings(user,useSynologyRaw);
+    
+    if ~useSynologyRaw
+        setupFolderStructure('',1,0);
+    end
+    setupFolderStructure('',0,1);
     save(getSettingsPath,'settings');
     set(handles.textStatus,'string','Default settings loaded');
 end
-
 set(handles.animal,'string',settings.animal);
 set(handles.funit,'string',settings.unit);
 set(handles.exp,'string',settings.experiment);
@@ -743,7 +749,7 @@ clear UnitType Data CondInfo Variables Values Analyzer Mapping
 global UnitType Data CondInfo Variables Values Analyzer Mapping Spikes
 
 load(getSettingsPath);
-analyzerpath = settings.analyzerPath;
+analyzerpath = settings.rawAnalyzerPath;
 animal = get(handles.animal,'string');
 unit = get(handles.funit,'string');
 experiment = get(handles.exp,'string');
@@ -753,8 +759,8 @@ fullFileName = [animal '_' unit '_' experiment];
 analyzerFullPath = [analyzerpath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
 load(analyzerFullPath,'-mat');
 
-load([settings.dataFilePath settings.filepathSlash fullFileName '_data.mat'])
-load([settings.spikeFilePath settings.filepathSlash fullFileName '_spikes.mat'])
+load([settings.outDataFilePath settings.filepathSlash fullFileName '_data.mat'])
+load([settings.outSpikeFilePath settings.filepathSlash fullFileName '_spikes.mat'])
 
 % eval(strcat('load(''','out\AnalyzedEphys\',get(handles.animal,'string'),'_',get(handles.funit,'string'),'-',get(handles.exp,'string'),' Data.mat'',''-mat'')'))
 % eval(strcat('load(''','out\SpikesEphys\',get(handles.animal,'string'),'_',get(handles.funit,'string'),'-',get(handles.exp,'string'),' Spikes.mat'',''-mat'')'))

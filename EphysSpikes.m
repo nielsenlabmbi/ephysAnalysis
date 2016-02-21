@@ -64,13 +64,21 @@ if exist(getSettingsPath,'file')
     load(getSettingsPath);
     set(handles.textStatus,'string','Saved settings loaded');
 else
-    defaultSettings;
-    if ~exist('settings','dir'); mkdir('settings'); end
+    user = lower(input('Cannot find settings file. What is your name?: ','s'));
+    useSynologyRaw = input('Do you want to use the Synology drive for getting raw data? (1=yes, 0=no): ');
+    disp('Creating required folder structures and setting files. Please check, reconfirm and manually reconfigure folders by editing the settings.mat file. Also, please create outShare folder structure manually.');
+    settings = defaultSettings(user,useSynologyRaw);
+    
+    if ~useSynologyRaw
+        setupFolderStructure('',1,0);
+    end
+    setupFolderStructure('',0,1);
     save(getSettingsPath,'settings');
     set(handles.textStatus,'string','Default settings loaded');
 end
-set(handles.analyzerPath,'string',settings.analyzerPath);
-set(handles.path,'string',settings.path);
+
+set(handles.analyzerPath,'string',settings.rawAnalyzerPath);
+set(handles.path,'string',settings.rawDataPath);
 set(handles.animal,'string',settings.animal);
 set(handles.unit,'string',settings.unit);
 set(handles.experiment,'string',settings.experiment);
@@ -586,7 +594,7 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 
     %save
     load(getSettingsPath);
-    save([settings.spikeFilePath settings.filepathSlash get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
+    save([settings.outSpikeFilePath settings.filepathSlash get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
     
     choice = questdlg('Do you want to save this record in the summary file?', ...
         'Summary file save', ...
@@ -601,7 +609,7 @@ function pushbutton2_Callback(hObject, eventdata, handles)
     end
     
     % open table data
-    [num,~,raw] = xlsread(settings.summaryFileFullPath,1);
+    [num,~,raw] = xlsread([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],1);
     AnimalAge = raw([0;num(:,6)] ==  1,[1 2]);
     [~,id,~] = unique(AnimalAge(:,1));
     AnimalAge = AnimalAge(id,:);
@@ -636,7 +644,7 @@ function pushbutton2_Callback(hObject, eventdata, handles)
     raw(end,5) = {Experiment};
     raw(end,9) = {'Not sorted'};
     raw(end,18) = {Area};
-    xlswrite([Path FileName],raw,1)
+    xlswrite([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1)
     set(handles.textStatus,'string','Finished processing. Spike/summary file saved. Proceed to sorting.');
 
 % --- Executes on selection change in Chs.

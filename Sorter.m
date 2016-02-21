@@ -63,11 +63,19 @@ if exist(getSettingsPath,'file')
     load(getSettingsPath);
     set(handles.textStatus,'string','Saved settings loaded');
 else
-    defaultSettings;
-    if ~exist('settings','dir'); mkdir('settings'); end
+    user = lower(input('Cannot find settings file. What is your name?: ','s'));
+    useSynologyRaw = input('Do you want to use the Synology drive for getting raw data? (1=yes, 0=no): ');
+    disp('Creating required folder structures and setting files. Please check, reconfirm and manually reconfigure folders by editing the settings.mat file. Also, please create outShare folder structure manually.');
+    settings = defaultSettings(user,useSynologyRaw);
+    
+    if ~useSynologyRaw
+        setupFolderStructure('',1,0);
+    end
+    setupFolderStructure('',0,1);
     save(getSettingsPath,'settings');
     set(handles.textStatus,'string','Default settings loaded');
 end
+
 set(handles.Animal,'string',settings.animal);
 set(handles.Unit,'string',settings.unit);
 set(handles.Exp,'string',settings.experiment);
@@ -571,7 +579,7 @@ msg = '';
 set(handles.textStatus,'string','Saving spike file...'); drawnow
 load(getSettingsPath);
 if isempty(ManuallyLoadedSpikeFilePath)
-    save([settings.spikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    save([settings.outSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
     msg = [msg ' Spike file saved.'];
 else
     choice = questdlg('This action will overwrite the manually loaded spike file. Continue?', ...
@@ -694,7 +702,7 @@ end
 set(handles.textStatus,'string','Formatting complete. Saving data file...');
 
 if isempty(ManuallyLoadedSpikeFilePath)
-    save([settings.dataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    save([settings.outDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
     msg = [msg ' Data file saved.'];
     set(handles.textStatus,'string','Data file saved.');
 else
@@ -730,7 +738,7 @@ if length(UnitType)>1
     return
 end
 
-[num,txt,raw] = xlsread(settings.summaryFileFullPath,1);
+[num,txt,raw] = xlsread([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],1);
 Rows = [];
 for i = 1:length(raw(:,1))
     if isequal(raw(i,3),{[get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
@@ -765,7 +773,7 @@ for i = 1:length(UnitType{1})
     Cont = sum(ISI<45)/length(ISI);
     raw(Rows(1)+i-1,9) = {Cont};
 end
-xlswrite([Path FileName],raw,1);
+xlswrite([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1);
 msg = [msg ' Summary file saved.'];
 set(handles.textStatus,'string',msg);
 
@@ -1182,8 +1190,8 @@ experiment = get(handles.Exp,'string');
 
 fullFileName = [animal '_' unit '_' experiment];
 
-analyzerFullPath = [settings.analyzerPath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
-spikeFileFullPath = [settings.spikeFilePath settings.filepathSlash fullFileName '_spikes.mat'];
+analyzerFullPath = [settings.rawAnalyzerPath settings.filepathSlash animal settings.filepathSlash fullFileName '.analyzer'];
+spikeFileFullPath = [settings.outSpikeFilePath settings.filepathSlash fullFileName '_spikes.mat'];
 
 load(analyzerFullPath,'-mat');
 load(spikeFileFullPath);
