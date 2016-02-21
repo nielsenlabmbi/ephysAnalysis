@@ -576,10 +576,11 @@ function saveSpikeDataFile(handles)
 global Analyzer  Spikes UnitType Events Mapping ManuallyLoadedSpikeFilePath
 % Save Sort File
 msg = '';
-set(handles.textStatus,'string','Saving spike file...'); drawnow
+set(handles.textStatus,'string','Appending spike file with sorting paramenters...'); drawnow
 load(getSettingsPath);
 if isempty(ManuallyLoadedSpikeFilePath)
     save([settings.outSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    save([settings.outShareSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
     msg = [msg ' Spike file saved.'];
 else
     choice = questdlg('This action will overwrite the manually loaded spike file. Continue?', ...
@@ -703,6 +704,7 @@ set(handles.textStatus,'string','Formatting complete. Saving data file...');
 
 if isempty(ManuallyLoadedSpikeFilePath)
     save([settings.outDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    save([settings.outShareDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
     msg = [msg ' Data file saved.'];
     set(handles.textStatus,'string','Data file saved.');
 else
@@ -774,6 +776,7 @@ for i = 1:length(UnitType{1})
     raw(Rows(1)+i-1,9) = {Cont};
 end
 xlswrite([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1);
+xlswrite([settings.outShareSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1);
 msg = [msg ' Summary file saved.'];
 set(handles.textStatus,'string',msg);
 

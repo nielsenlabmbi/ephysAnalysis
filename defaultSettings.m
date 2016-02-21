@@ -9,7 +9,7 @@ function settings = defaultSettings(user,useSynologyRaw)
         settings.filepathSlash = '\';
         settings.rawPath = 'Z:\EphysNew';
         settings.nevFilePrefix = '';
-        settings.outShareRoot = 'Z:\EphysNew\OutShare';
+        settings.outShareRoot = 'Z:\EphysNew\outShare';
     else
         settings.filepathSlash = '/';
         settings.rawPath = '/Volumes/NielsenLabHome/EphysNew';
@@ -26,13 +26,16 @@ function settings = defaultSettings(user,useSynologyRaw)
     settings.rawlogFilesPath = [settings.rawPath settings.filepathSlash 'log_files'];
 
     settings.outPath = 'out';
-
     settings.outSummaryFilePath = [settings.outPath settings.filepathSlash 'summary'];
     settings.outSpikeFilePath = [settings.outPath settings.filepathSlash 'spikeStage'];
     settings.outDataFilePath = [settings.outPath settings.filepathSlash 'dataStage'];
     settings.outPlotsFilePath = [settings.outPath settings.filepathSlash 'plots'];
 
     settings.outSharePath = [settings.outShareRoot settings.filepathSlash settings.username];
+    settings.outShareSummaryFilePath = [settings.outSharePath settings.filepathSlash 'summary'];
+    settings.outShareSpikeFilePath = [settings.outSharePath settings.filepathSlash 'spikeStage'];
+    settings.outShareDataFilePath = [settings.outSharePath settings.filepathSlash 'dataStage'];
+    settings.outSharePlotsFilePath = [settings.outSharePath settings.filepathSlash 'plots'];
 
     settings.sorterDotSize = 1;
 

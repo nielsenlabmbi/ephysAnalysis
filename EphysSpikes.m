@@ -595,6 +595,7 @@ function pushbutton2_Callback(hObject, eventdata, handles)
     %save
     load(getSettingsPath);
     save([settings.outSpikeFilePath settings.filepathSlash get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
+    save([settings.outShareSpikeFilePath settings.filepathSlash get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
     
     choice = questdlg('Do you want to save this record in the summary file?', ...
         'Summary file save', ...
@@ -645,6 +646,7 @@ function pushbutton2_Callback(hObject, eventdata, handles)
     raw(end,9) = {'Not sorted'};
     raw(end,18) = {Area};
     xlswrite([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1)
+    xlswrite([settings.outShareSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1)
     set(handles.textStatus,'string','Finished processing. Spike/summary file saved. Proceed to sorting.');
 
 % --- Executes on selection change in Chs.
