@@ -22,7 +22,7 @@ function varargout = Sorter(varargin)
 
 % Edit the above text to modify the response to help Sorter
 
-% Last Modified by GUIDE v2.5 18-Feb-2016 16:06:56
+% Last Modified by GUIDE v2.5 21-Feb-2016 13:00:27
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -549,10 +549,10 @@ else
 PCVsTOp = PCVs;
 end
 if i == 1
-scatter(PCVsTOp(1,:),PCVsTOp(2,:),'CData',[0 0 0],'Marker','.','SizeData',eval(get(handles.DotSize,'String')))
+scatter(PCVsTOp(1,:),PCVsTOp(2,:),'CData',[0 0 0],'Marker','.','SizeData',str2double(get(handles.DotSize,'String')))
 hold on
 else
-scatter(PCVsTOp(1,:),PCVsTOp(2,:),'CData',color,'Marker','.','SizeData',eval(get(handles.DotSize,'String')))
+scatter(PCVsTOp(1,:),PCVsTOp(2,:),'CData',color,'Marker','.','SizeData',str2double(get(handles.DotSize,'String')))
 hold on
 end
 end
