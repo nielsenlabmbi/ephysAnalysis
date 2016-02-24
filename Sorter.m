@@ -494,26 +494,23 @@ if UnitsPloted(i)>0
     end
     
     if PCs(j) == 6
-    Waveforms = Spikes{Site}.Waveform(Spks,:,:);
-    for h = 1:length(Waveforms(:,1,1))
-    Wf = squeeze(Waveforms(h,:,:));
-    Min = min(min(Wf));
-    [Y MinP] = find(Wf == Min,1);
-    Min = min(Wf(chs(j),MinP));
-    PCVs(j,h) = abs(Min);
+        Waveforms = Spikes{Site}.Waveform(Spks,:,:);
+        RWaveforms = reshape(Waveforms,[size(Waveforms,1),size(Waveforms,2)*size(Waveforms,3)]);
+        [~,ind] = min(RWaveforms,[],2);
+        ind = ceil(ind/(size(Waveforms,2)));
+        ind(ind==0) = size(Waveforms,3);
+        
+        PCVs(j,:) = -Waveforms(squeeze([1:size(Waveforms,1)]'+[(chs(j)-1)*size(Waveforms,1)+(ind-1)*size(Waveforms,2)*size(Waveforms,1)]));
+%         PCVs(j,:) = squeeze(Waveforms(:,chs(j),ind));
+%         for h = 1:length(Waveforms(:,1,1))
+%             Wf = squeeze(Waveforms(h,:,:));
+%             Min = min(Wf(:));
+%             [~,MinP] = find(Wf == Min,1);
+%             Min = min(Wf(chs(j),MinP));
+%             PCVs(j,h) = abs(Min);
+%         end
     end
-    end
-    if PCs(j) == 7
-    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
-    for h = 1:length(Waveforms(1,:))
-        Min = min(Waveforms(:,h));
-        MinP = find(Waveforms(:,h) == Min,1);
-        Max = max(Waveforms(MinP:end,h));
-        MaxP = find(Waveforms(:,h) == Max,1);
-        PCVs(j,h) = (Max-Min)/abs(MaxP-MinP);
-    end
-    end
-    
+
     if PCs(j) == 8
     Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
     for h = 1:length(Waveforms(1,:))
@@ -579,8 +576,8 @@ msg = '';
 set(handles.textStatus,'string','Appending spike file with sorting paramenters...'); drawnow
 load(getSettingsPath);
 if isempty(ManuallyLoadedSpikeFilePath)
-    save([settings.outSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
-    save([settings.outShareSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    save([settings.outSpikeFilePath settings.filepathSlash lower(get(handles.Animal,'String')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    save([settings.outShareSpikeFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
     msg = [msg ' Spike file saved.'];
 else
     choice = questdlg('This action will overwrite the manually loaded spike file. Continue?', ...
@@ -703,8 +700,8 @@ end
 set(handles.textStatus,'string','Formatting complete. Saving data file...');
 
 if isempty(ManuallyLoadedSpikeFilePath)
-    save([settings.outDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
-    save([settings.outShareDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    save([settings.outDataFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    save([settings.outShareDataFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
     msg = [msg ' Data file saved.'];
     set(handles.textStatus,'string','Data file saved.');
 else
@@ -743,7 +740,7 @@ end
 [num,txt,raw] = xlsread([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],1);
 Rows = [];
 for i = 1:length(raw(:,1))
-    if isequal(raw(i,3),{[get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
+    if isequal(raw(i,3),{[lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
         Rows = [Rows i];
     end
 end
@@ -757,8 +754,8 @@ if length(Rows) > 1
     Rows = Rows(1);
 end
 raw = [raw(1:Rows(1),:);cell(length(UnitType{1})-1,length(raw(1,:)));raw(Rows(1)+1:end,:)];
-raw(Rows(1):Rows(1)+length(UnitType{1})-1,1) = {get(handles.Animal,'String')};
-raw(Rows(1):Rows(1)+length(UnitType{1})-1,3) = {[get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]};
+raw(Rows(1):Rows(1)+length(UnitType{1})-1,1) = {lower(get(handles.Animal,'string'))};
+raw(Rows(1):Rows(1)+length(UnitType{1})-1,3) = {[lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]};
 raw(Rows(1):Rows(1)+length(UnitType{1})-1,10) = cell(length(UnitType{1}),1);
 raw(Rows(1):Rows(1)+length(UnitType{1})-1,18) = raw(Rows(1),18);
 raw(Rows(1):Rows(1)+length(UnitType{1})-1,2) = raw(Rows(1),2);
@@ -1187,7 +1184,7 @@ load(getSettingsPath);
 
 ManuallyLoadedSpikeFilePath = [];
 
-animal = get(handles.Animal,'string');
+animal = lower(get(handles.Animal,'string'));
 unit = get(handles.Unit,'string');
 experiment = get(handles.Exp,'string');
 
