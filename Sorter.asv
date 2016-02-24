@@ -501,13 +501,11 @@ if UnitsPloted(i)>0
     
     if PCs(j) == 6
         Waveforms = Spikes{Site}.Waveform(allSpksSubSample,:,:);
-        RWaveforms = reshape(Waveforms,[size(Waveforms,1),size(Waveforms,2)*size(Waveforms,3)]);
+        RWaveforms = reshape(Waveforms,size(Waveforms,1),size(Waveforms,2)*size(Waveforms,3));
         [~,ind] = max(RWaveforms,[],2);
-        ind = ceil(ind/(size(Waveforms,2)));
+        ind = mod(ind,size(Waveforms,3));
         ind(ind==0) = size(Waveforms,3);
-        
-        PCVs(j,:) = Waveforms(squeeze([1:size(Waveforms,1)]'+[(chs(j)-1)*size(Waveforms,1)+(ind-1)*size(Waveforms,2)*size(Waveforms,1)]));
-%         PCVs(j,:) = squeeze(Waveforms(:,chs(j),ind));
+        PCVs(j,:) = Waveforms(1:10000,j*size(Waveforms,1),ind);
 %         for h = 1:length(Waveforms(:,1,1))
 %             Wf = squeeze(Waveforms(h,:,:));
 %             Min = min(Wf(:));
