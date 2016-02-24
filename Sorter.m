@@ -454,12 +454,6 @@ set(handles.points,'Visible','on')
 allSpks = find(Spikes{Site}.Unit== unit);
 end
 end
-if not(get(handles.All,'Value')) && length(allSpks) > eval(get(handles.MaxSp,'String'))
-    ToP = randsample([1:length(allSpks)],eval(get(handles.MaxSp,'String')) );
-    allSpksSubSample = allSpks(ToP);
-else
-    allSpksSubSample = allSpks;
-end
 UnitsPloted = unique(Spikes{Site}.Unit(allSpks));
 chs = [get(handles.CH1,'Value') get(handles.CH2,'Value')];
 PCVs = [];
@@ -474,15 +468,15 @@ if UnitsPloted(i)>0
     end
     PCVs = [];
     for j =1:2
-%     allSpksSubSample = find(Spikes{Site}.Unit== UnitsPloted(i));
-    Waveforms = squeeze(Spikes{Site}.Waveform(allSpksSubSample,chs(j),:))';
+    Spks = find(Spikes{Site}.Unit== UnitsPloted(i));
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
     
     if PCs(j) < 4
     PCVs(j,:) = G{j}.PC(PCs(j),:)*Waveforms;
     end
     
     if PCs(j) == 4
-    Waveforms = squeeze(Spikes{Site}.Waveform(allSpksSubSample,chs(j),:))';
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
     for h = 1:length(Waveforms(1,:))
         Min = min(Waveforms(:,h));
         Minp = find(Waveforms(:,h) == Min);
@@ -492,32 +486,25 @@ if UnitsPloted(i)>0
     end
 
     if PCs(j) == 5
-        Waveforms = squeeze(Spikes{Site}.Waveform(allSpksSubSample,chs(j),:))';
-        for h = 1:length(Waveforms(1,:))
-            Energy = sqrt(sum((diff(Waveforms(:,h))).^2));
-            PCVs(j,h) = Energy;
-        end
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
+    for h = 1:length(Waveforms(1,:))
+        Energy = sqrt(sum((diff(Waveforms(:,h))).^2));
+        PCVs(j,h) = Energy;
+    end
     end
     
     if PCs(j) == 6
-        Waveforms = Spikes{Site}.Waveform(allSpksSubSample,:,:);
-        RWaveforms = reshape(Waveforms,[size(Waveforms,1),size(Waveforms,2)*size(Waveforms,3)]);
-        [~,ind] = max(RWaveforms,[],2);
-        ind = ceil(ind/(size(Waveforms,2)));
-        ind(ind==0) = size(Waveforms,3);
-        
-        PCVs(j,:) = Waveforms(squeeze([1:size(Waveforms,1)]'+[(chs(j)-1)*size(Waveforms,1)+(ind-1)*size(Waveforms,2)*size(Waveforms,1)]));
-%         PCVs(j,:) = squeeze(Waveforms(:,chs(j),ind));
-%         for h = 1:length(Waveforms(:,1,1))
-%             Wf = squeeze(Waveforms(h,:,:));
-%             Min = min(Wf(:));
-%             [~,MinP] = find(Wf == Min,1);
-%             Min = min(Wf(chs(j),MinP));
-%             PCVs(j,h) = abs(Min);
-%         end
+    Waveforms = Spikes{Site}.Waveform(Spks,:,:);
+    for h = 1:length(Waveforms(:,1,1))
+    Wf = squeeze(Waveforms(h,:,:));
+    Min = min(min(Wf));
+    [Y MinP] = find(Wf == Min,1);
+    Min = min(Wf(chs(j),MinP));
+    PCVs(j,h) = abs(Min);
+    end
     end
     if PCs(j) == 7
-    Waveforms = squeeze(Spikes{Site}.Waveform(allSpksSubSample,chs(j),:))';
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
     for h = 1:length(Waveforms(1,:))
         Min = min(Waveforms(:,h));
         MinP = find(Waveforms(:,h) == Min,1);
@@ -528,7 +515,7 @@ if UnitsPloted(i)>0
     end
     
     if PCs(j) == 8
-    Waveforms = squeeze(Spikes{Site}.Waveform(allSpksSubSample,chs(j),:))';
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
     for h = 1:length(Waveforms(1,:))
     Min = min(Waveforms(:,h));
     MinP = find(Waveforms(:,h) == Min,1);
@@ -536,7 +523,7 @@ if UnitsPloted(i)>0
     end
     end
     if PCs(j) == 9
-    Waveforms = squeeze(Spikes{Site}.Waveform(allSpksSubSample,chs(j),:))';
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
     for h = 1:length(Waveforms(1,:))
         Min = min(Waveforms(:,h));
         Minp = find(Waveforms(:,h) == Min);
@@ -552,10 +539,15 @@ Tmp = length(UnitsPloted)-1;
 if Tmp == 0
    Tmp = 1;
 end
-PCVsTOp = PCVs;
+
 color = [normpdf((i-1)/Tmp,0,0.3)+normpdf((i-1)/Tmp,1,0.3) normpdf((i-1)/Tmp,0.33,0.3) normpdf((i-1)/Tmp,0.66,0.3)];
 color = color./max(color);
-
+if not(get(handles.All,'Value')) && length(PCVs(1,:)) > eval(get(handles.MaxSp,'String'))
+ToP = randsample([1:length(PCVs(1,:))],eval(get(handles.MaxSp,'String')) );
+PCVsTOp = PCVs(:,ToP);
+else
+PCVsTOp = PCVs;
+end
 if i == 1
 scatter(PCVsTOp(1,:),PCVsTOp(2,:),'CData',[0 0 0],'Marker','.','SizeData',str2double(get(handles.DotSize,'String')))
 hold on
@@ -587,8 +579,8 @@ msg = '';
 set(handles.textStatus,'string','Appending spike file with sorting paramenters...'); drawnow
 load(getSettingsPath);
 if isempty(ManuallyLoadedSpikeFilePath)
-    save([settings.outSpikeFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
-    save([settings.outShareSpikeFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    save([settings.outSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
+    save([settings.outShareSpikeFilePath settings.filepathSlash get(handles.Animal,'String') '_' get(handles.Unit,'String') '_' get(handles.Exp,'String') '_spikes'], 'Spikes','UnitType','-append');
     msg = [msg ' Spike file saved.'];
 else
     choice = questdlg('This action will overwrite the manually loaded spike file. Continue?', ...
@@ -711,8 +703,8 @@ end
 set(handles.textStatus,'string','Formatting complete. Saving data file...');
 
 if isempty(ManuallyLoadedSpikeFilePath)
-    save([settings.outDataFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
-    save([settings.outShareDataFilePath settings.filepathSlash lower(get(handles.Animal,'string')) '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    save([settings.outDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
+    save([settings.outShareDataFilePath settings.filepathSlash get(handles.Animal,'string') '_' get(handles.Unit,'string') '_' get(handles.Exp,'string') '_data'], 'Data', 'UnitType','Variables','Values','RespFunc','CondInfo')
     msg = [msg ' Data file saved.'];
     set(handles.textStatus,'string','Data file saved.');
 else
@@ -1195,7 +1187,7 @@ load(getSettingsPath);
 
 ManuallyLoadedSpikeFilePath = [];
 
-animal = lower(get(handles.Animal,'string'));
+animal = get(handles.Animal,'string');
 unit = get(handles.Unit,'string');
 experiment = get(handles.Exp,'string');
 
