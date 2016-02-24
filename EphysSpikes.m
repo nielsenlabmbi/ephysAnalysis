@@ -22,7 +22,7 @@ function varargout = EphysSpikes(varargin)
 
 % Edit the above text to modify the response to help EphysSpikes
 
-% Last Modified by GUIDE v2.5 16-Feb-2016 14:41:08
+% Last Modified by GUIDE v2.5 21-Feb-2016 15:10:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -171,15 +171,15 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton1.
-function pushbutton1_Callback(hObject, eventdata, handles)
+% --- Executes on button press in buttonLoadData.
+function buttonLoadData_Callback(hObject, eventdata, handles)
 clear Thresholds d ChId NS3 NS6 NEV
 global NS6 Thresholds d ChID Analyzer NS3 NEV
 
 load(getSettingsPath);
 path = get(handles.path,'string');
 analyzerpath = get(handles.analyzerPath,'string');
-animal = get(handles.animal,'string');
+animal = lower(lower(get(handles.animal,'string')));
 unit = get(handles.unit,'string');
 experiment = get(handles.experiment,'string');
 
@@ -240,7 +240,7 @@ hold on
 title('Last minute')
 plot([1 360000],[Thresholds(1) Thresholds(1)], 'color', [1 0 0])
 
-% hObject    handle to pushbutton1 (see GCBO)
+% hObject    handle to buttonLoadData (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -285,8 +285,8 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton2.
-function pushbutton2_Callback(hObject, eventdata, handles)
+% --- Executes on button press in buttonSaveData.
+function buttonSaveData_Callback(hObject, eventdata, handles)
     global Thresholds NS6 ChID Analyzer NS3 NEV Pulses
     Times = [];
 
@@ -594,8 +594,8 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 
     %save
     load(getSettingsPath);
-    save([settings.outSpikeFilePath settings.filepathSlash get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
-    save([settings.outShareSpikeFilePath settings.filepathSlash get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
+    save([settings.outSpikeFilePath settings.filepathSlash lower(get(handles.animal,'string')) '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
+    save([settings.outShareSpikeFilePath settings.filepathSlash lower(get(handles.animal,'string')) '_' get(handles.unit,'String') '_' get(handles.experiment,'String') '_spikes'], 'Spikes','UnitType','Mapping','Events');
     
     choice = questdlg('Do you want to save this record in the summary file?', ...
         'Summary file save', ...
@@ -616,7 +616,7 @@ function pushbutton2_Callback(hObject, eventdata, handles)
     AnimalAge = AnimalAge(id,:);
     ID = 0;
     for i = 1:length(AnimalAge(:,1))
-        if isequal(AnimalAge{i,1},get(handles.animal,'String'))
+        if isequal(AnimalAge{i,1},lower(get(handles.animal,'string')))
             ID = i;
         end
     end
@@ -634,14 +634,14 @@ function pushbutton2_Callback(hObject, eventdata, handles)
     %mod table
     Rows = [];
     for i = 1:length(raw(:,1))
-        if isequal(raw(i,3),{[get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String')]})
+        if isequal(raw(i,3),{[lower(get(handles.animal,'string')) '_' get(handles.unit,'String') '_' get(handles.experiment,'String')]})
             Rows = [Rows i];
         end
     end
     raw(Rows,:) = [];
-    raw(end+1,1) = {get(handles.animal,'String')};
+    raw(end+1,1) = {lower(get(handles.animal,'string'))};
     raw(end,2) = {Age};
-    raw(end,3) = {[get(handles.animal,'String') '_' get(handles.unit,'String') '_' get(handles.experiment,'String')]};
+    raw(end,3) = {[lower(get(handles.animal,'string')) '_' get(handles.unit,'String') '_' get(handles.experiment,'String')]};
     raw(end,5) = {Experiment};
     raw(end,9) = {'Not sorted'};
     raw(end,18) = {Area};
@@ -757,9 +757,9 @@ end
 
 
 % --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over pushbutton1.
-function pushbutton1_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Otherwise, executes on mouse press in 5 pixel border or over buttonLoadData.
+function buttonLoadData_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to buttonLoadData (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
