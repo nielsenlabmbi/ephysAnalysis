@@ -510,6 +510,17 @@ if UnitsPloted(i)>0
 %             PCVs(j,h) = abs(Min);
 %         end
     end
+    
+    if PCs(j) == 7
+    Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
+    for h = 1:length(Waveforms(1,:))
+        Min = min(Waveforms(:,h));
+        MinP = find(Waveforms(:,h) == Min,1);
+        Max = max(Waveforms(MinP:end,h));
+        MaxP = find(Waveforms(:,h) == Max,1);
+        PCVs(j,h) = (Max-Min)/abs(MaxP-MinP);
+    end
+    end
 
     if PCs(j) == 8
     Waveforms = squeeze(Spikes{Site}.Waveform(Spks,chs(j),:))';
