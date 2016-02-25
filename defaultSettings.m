@@ -12,9 +12,9 @@ function settings = defaultSettings(user,useSynologyRaw)
         settings.outShareRoot = 'Z:\EphysNew\outShare';
     else
         settings.filepathSlash = '/';
-        settings.rawPath = '/Volumes/NielsenLabHome/EphysNew';
+        settings.rawPath = '/Volumes/NielsenHome/EphysNew';
         settings.nevFilePrefix = [pwd '/'];
-        settings.outShareRoot = '/Volumes/NielsenLabHome/EphysNew/outShare';
+        settings.outShareRoot = '/Volumes/NielsenHome/EphysNew/outShare';
     end
 
     if ~useSynologyRaw
