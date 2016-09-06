@@ -356,11 +356,31 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
         NS3.Data = NS3.Data{2};
     end
     
+    samplingFreq = 30000;
+    analogChSamplingFreq = 2000;
+    StimT = getparam('stim_time',Analyzer)*samplingFreq; % Analyzer.P.param{1,3}{1,3}*30000;
+    PostD = getparam('postdelay',Analyzer)*samplingFreq; % Analyzer.P.param{1,2}{1,3}*30000;
+    PreD = getparam('predelay',Analyzer)*samplingFreq; % Analyzer.P.param{1,1}{1,3}*30000;
+
+    Reps = getnorepeats(1,Analyzer);
+    [~,domval,blankid]=getdomainvalue(Analyzer);
+    BReps = getnorepeats(blankid,Analyzer);
+    
+    trialList = getcondtrial(Analyzer);
+    
+    Times = zeros(length(trialList),1);
+    
     %with pulses
     if get(handles.Pulses,'Value')
-        Reps = length(Analyzer.loops.conds{1,1}.repeats);
-        BReps =length(Analyzer.loops.conds{1,end}.repeats);
-        Times = zeros(((length(Analyzer.loops.conds)-1)*Reps*4+BReps*4),1);
+        % use the analyzer utils apis instead of doing this yourself.
+        % already done outside the if block
+%         Reps = length(Analyzer.loops.conds{1,1}.repeats);
+%         BReps =length(Analyzer.loops.conds{1,end}.repeats);
+%         Reps = getnorepeats(1,Analyzer);
+%         [~,domval,blankid]=getdomainvalue(Analyzer);
+%         BReps = getnorepeats(blankid,Analyzer);
+        
+%         Times = zeros(size(domval,1)*Reps*4 + BReps*4,1);
         Pulses = [];
         PulseChs = eval(get(handles.PulsesCh,'String'));
         for j = 1:length(PulseChs)
@@ -380,12 +400,12 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
         Pulses = Pulses*15;
 
         % Identifing real pulses based on Delay expectation
-        StimT = Analyzer.P.param{1,3}{1,3}*30000;
-        PostD = Analyzer.P.param{1,2}{1,3}*30000;
-        PreD = Analyzer.P.param{1,1}{1,3}*30000;
+%         StimT = Analyzer.P.param{1,3}{1,3}*30000;
+%         PostD = Analyzer.P.param{1,2}{1,3}*30000;
+%         PreD = Analyzer.P.param{1,1}{1,3}*30000;
         ind = 1;
         PInd = 0;
-        Pulses = [Pulses Pulses(end)+PostD+2000];
+        Pulses = [Pulses Pulses(end)+PostD+analogChSamplingFreq];
         while ind<length(Times)
             error = StimT+PostD+PreD;
             while error >(StimT+PostD+PreD)*0.1
@@ -442,19 +462,24 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
     if get(handles.Photodiode,'Value')
         PulseCh = eval(get(handles.PhotodCh,'String'));
         AinpData = (NS3.Data(PulseCh,:));
-        Pulses = find(AinpData >= 100);
+        p = zeros(length(AinpData),1);
+        for ii=1:length(AinpData)-1
+            if (AinpData(ii) <= 100 && AinpData(ii+1) > 100) || ...
+                (AinpData(ii) >= 100 && AinpData(ii+1) < 100)
+                p(ii) = 1;
+            end
+        end
+        Pulses = find(p);
+%         Pulses = find(AinpData >= 100);
         Pulses = sort(Pulses);
-        Postd = Analyzer.P.param{1,2}{1,3}*2000;
-        Pulses = [Pulses Pulses(end)+Postd];
+        Postd = getparam('postdelay',Analyzer)*analogChSamplingFreq;
+        Pulses = [Pulses;Pulses(end)+Postd];
         Pulses = Pulses*15;
 
         % Identifing real pulses based on Delay expectation
-        StimT = Analyzer.P.param{1,3}{1,3}*30000;
-        PostD = Analyzer.P.param{1,2}{1,3}*30000;
-        PreD = Analyzer.P.param{1,1}{1,3}*30000;
         ind = 1;
         PInd = 0;
-        Pulses = [Pulses Pulses(end)+PostD+2000];
+        Pulses = [Pulses;Pulses(end)+PostD+analogChSamplingFreq];
         while ind<length(Times)
             error = StimT+PostD+PreD;
             while error >(StimT+PostD+PreD)*0.1
@@ -515,22 +540,31 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
     Pulses = double(NEV.Data.SerialDigitalIO.TimeStamp);
     Pulses = sort(Pulses);
     UnpDta = abs(diff(double(NEV.Data.SerialDigitalIO.UnparsedData')));
-    if not(isempty(Pulses))
-        StimT = Analyzer.P.param{1,3}{1,3}*30000;
-        PostD = Analyzer.P.param{1,2}{1,3}*30000;
-        PreD = Analyzer.P.param{1,1}{1,3}*30000;
-        Reps = length(Analyzer.loops.conds{1,1}.repeats);
-        BReps =length(Analyzer.loops.conds{1,end}.repeats);
+    if ~isempty(Pulses)
+        % already done outside the if block
+%         StimT = Analyzer.P.param{1,3}{1,3}*30000;
+%         PostD = Analyzer.P.param{1,2}{1,3}*30000;
+%         PreD = Analyzer.P.param{1,1}{1,3}*30000;
+
+        % use the analyzer utils apis instead of doing this yourself.
+        % already done outside the if block
+%         Reps = length(Analyzer.loops.conds{1,1}.repeats);
+%         BReps =length(Analyzer.loops.conds{1,end}.repeats);
+%         Reps = getnorepeats(1,Analyzer);
+%         [~,~,blankid]=getdomainvalue(Analyzer);
+%         BReps = getnorepeats(blankid,Analyzer);
+
         dPulses = diff(Pulses);
         Pulses([find(dPulses<2) find(dPulses<5)+1]) = [];
         UnpDta([find(dPulses<2) find(dPulses<5)-1]) = [];
         Pulses(find((UnpDta ~= 8)&(UnpDta ~= 4)&(UnpDta ~= 24))+1) = [];
-        Times = zeros(((length(Analyzer.loops.conds)-1)*Reps*4+BReps*4),1);
+        Times = zeros(size(domval,1)*Reps*4 + BReps*4,1);
+%         Times = zeros(((length(Analyzer.loops.conds)-1)*Reps*4+BReps*4),1);
         if length(Pulses) ~= length(Times)
             warndlg('Digital pulses are more than 4 X NunberOfTrials using expected times')
             ind = 1;
             PInd = 0;
-            Pulses = [Pulses Pulses(end)+PostD Pulses(end)+PostD+2000];
+            Pulses = [Pulses Pulses(end)+PostD Pulses(end)+PostD+analogChSamplingFreq];
             while ind<length(Times)
                 error = StimT+PostD+PreD;
                 while error >(StimT+PostD+PreD)*0.1
