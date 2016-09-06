@@ -621,15 +621,25 @@ end
 set(handles.textStatus,'string','Now formatting data...'); drawnow
 
 % Analyze responses
-Params = Analyzer.L.param{1,1};
-Reps = length(Analyzer.loops.conds{1,1}.repeats);
-BReps =length(Analyzer.loops.conds{1,end}.repeats);
-Conds = length(Analyzer.loops.conds);
+[domains,domval,blankid]=getdomainvalue(Analyzer);
+nt = getnotrials(Analyzer);
+triallist=getcondtrial(Analyzer);
+
+Reps = getnorepeats(1,Analyzer);
+BReps = getnorepeats(blankid,Analyzer);
+Conds = getnoconditions(Analyzer);
+
 if isequal(Analyzer.loops.conds{1,end}.symbol{1,1}, 'blank')
     Conds = length(Analyzer.loops.conds)-1;
     for r = 1:BReps
         Trial = Analyzer.loops.conds{1,end}.repeats{1,r}.trialno;
-        TrialInfo(Trial,:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial,:))];
+        if size(Trial,2) == 1
+            TrialInfo(Trial,:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial,:))];
+        else
+            for tt=1:size(Trial,2)
+                TrialInfo(Trial(tt),:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial(tt),:))];
+            end
+        end
     end
 end
 for i = 1:Conds
