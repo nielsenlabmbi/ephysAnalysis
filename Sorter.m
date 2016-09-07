@@ -621,101 +621,121 @@ end
 set(handles.textStatus,'string','Now formatting data...'); drawnow
 
 % Analyze responses
-[domains,domval,blankid]=getdomainvalue(Analyzer);
-nt = getnotrials(Analyzer);
+[Parmass,CondInfo,blankid]=getdomainvalue(Analyzer);
 triallist=getcondtrial(Analyzer);
 
-Reps = getnorepeats(1,Analyzer);
-BReps = getnorepeats(blankid,Analyzer);
-Conds = getnoconditions(Analyzer);
+nReps = getnorepeats(1,Analyzer);
+nBReps = getnorepeats(blankid,Analyzer);
+nConds = size(CondInfo,1);
 
-if isequal(Analyzer.loops.conds{1,end}.symbol{1,1}, 'blank')
-    Conds = length(Analyzer.loops.conds)-1;
-    for r = 1:BReps
-        Trial = Analyzer.loops.conds{1,end}.repeats{1,r}.trialno;
-        if size(Trial,2) == 1
-            TrialInfo(Trial,:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial,:))];
-        else
-            for tt=1:size(Trial,2)
-                TrialInfo(Trial(tt),:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial(tt),:))];
+blankTrialNumbers = find(triallist == blankid);
+
+% for tt=1:length(blankTrialNumbers)
+%     TrialInfo(blankTrialNumbers(tt),:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(blankTrialNumbers(tt),:))];
+% end
+
+% if ~isempty(blankid)
+%     for r = 1:nBReps
+%         Trial = Analyzer.loops.conds{1,end}.repeats{1,r}.trialno;
+%         if size(Trial,2) == 1
+%             TrialInfo(Trial,:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial,:))];
+%         else
+%             for tt=1:size(Trial,2)
+%                 TrialInfo(Trial(tt),:) = [(zeros(length(Analyzer.loops.conds{1,end-1}.val(:,:)),1)-1).'  double(Events.Timestamp{1}(Trial(tt),:))];
+%             end
+%         end
+%     end
+% end
+TrialInfo = -1*ones(length(triallist),6);
+for tt=1:length(triallist)
+    if triallist(tt) == blankid
+        TrialInfo(triallist(tt),:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(triallist(tt),:))];
+    else
+        TrialInfo(triallist(tt),:) = [CondInfo(triallist(tt),:) double(Events.Timestamp{1}(triallist(tt),:))];
+    end
+end
+
+% for ii = 1:nConds
+%     for r = 1:nReps
+%         Trial = Analyzer.loops.conds{1,ii}.repeats{1,r}.trialno;
+%         TrialInfo(Trial,:) = [vertcat(Analyzer.loops.conds{1,ii}.val{:,:}).' double(Events.Timestamp{1}(Trial,:))];
+%     end
+%     CondInfo(ii,:)= vertcat(Analyzer.loops.conds{1,ii}.val{:,:}).';
+% end
+% Parmass = Analyzer.L.param;
+% nConds = 1;
+% for ii=1:length(Parmass(1,:))
+%     nConds = nConds*(length(eval(Parmass{1,ii}{2})));
+% end
+
+for site = 1:length(Spikes)
+    Units = unique(Spikes{site}.Unit);
+    Units = sort(Units);
+    if Units(1) == 0
+        Units = Units(2:end);
+    end
+    Units = length(Units);
+    Data{site}.Spiking=cell(nConds, Units, nReps);
+    Data{site}.BSpiking=cell(Units, nBReps);
+    Repetition = ones(nConds,1);
+    for T = 1:length(TrialInfo(:,1))
+        if not(isequal(TrialInfo(T,1:length(Parmass(1,:))), (zeros(1,length(Parmass(1,:))) -1)))
+            for Unit=1:Units
+                VariableIndex = VarIndx(TrialInfo(T,1:length(Parmass(1,:))));
+                Data{site}.Spiking{VariableIndex,Unit,Repetition(VariableIndex)} = double(Spikes{site}.TimeStamp(find(Spikes{site}.Unit == Unit & Spikes{site}.TimeStamp > TrialInfo(T,length(Parmass(1,:))+1) & Spikes{site}.TimeStamp < TrialInfo(T,length(Parmass(1,:))+4))))-TrialInfo(T,length(Parmass(1,:))+2);
             end
+            Repetition(VariableIndex) = Repetition(VariableIndex)+1;
+        end
+    end
+    Repetition = 1;
+    for T = 1:length(TrialInfo(:,1))
+        if TrialInfo(T,1:length(Parmass(1,:))) == zeros(1,length(Parmass(1,:))) -1
+            for Unit=1:Units
+                Data{site}.BSpiking{Unit,Repetition} = double(Spikes{site}.TimeStamp(find(Spikes{site}.Unit == Unit & Spikes{site}.TimeStamp > TrialInfo(T,length(Parmass(1,:))+1) & Spikes{site}.TimeStamp < TrialInfo(T,length(Parmass(1,:))+4))))-TrialInfo(T,length(Parmass(1,:))+2);
+            end
+            Repetition = Repetition+1;
+        end
+    end
+    
+    samplingFreq = 30000;
+    analogChSamplingFreq = 2000;
+    StimT = getparam('stim_time',Analyzer); % Analyzer.P.param{1,3}{1,3}*30000;
+    PostD = getparam('postdelay',Analyzer); % Analyzer.P.param{1,2}{1,3}*30000;
+    PreD = getparam('predelay',Analyzer); % Analyzer.P.param{1,1}{1,3}*30000;
+
+
+%     Paramss = Analyzer.L.param;
+%     FixIndx = zeros(length(Paramss(1,:)),1)-1;
+    for Unit = 1:length(UnitType{site})
+        %Calc Blank Responses
+        RepVal = [];
+            for rep = 1:length(Data{site}.BSpiking(1,:))
+                Spks = [Data{site}.BSpiking{Unit,rep}];
+                RepVal(rep) =((sum(Spks>0 & Spks < samplingFreq*StimT)/StimT)-((sum(Spks<0))/PreD));
+            end
+        Data{site}.BRespMean(Unit) = mean(RepVal);
+        Data{site}.BRespVar(Unit) = std(RepVal)/sqrt(length(RepVal));
+        Data{site}.AllBResp(:,Unit) = RepVal;
+
+        %Calc responses for all conditions
+        for ii = 1:length(Data{site}.Spiking(:,1,1))
+            RepVal = [];
+                for rep = 1:length(Data{site}.Spiking(1,1,:))
+                    Spks = [Data{site}.Spiking{ii,Unit,rep}];
+                    RepVal(rep) =((sum(Spks>0 & Spks < samplingFreq*StimT)/StimT)-((sum(Spks<0))/PreD));
+                end
+            Data{site}.RespVar(Unit,ii) = std(RepVal)/sqrt(length(RepVal));
+            Data{site}.RespMean(Unit,ii) = mean(RepVal);
+            Data{site}.AllResp(Unit,:,ii) = RepVal;
         end
     end
 end
-for i = 1:Conds
-    for r = 1:Reps
-        Trial = Analyzer.loops.conds{1,i}.repeats{1,r}.trialno;
-        TrialInfo(Trial,:) = [vertcat(Analyzer.loops.conds{1,i}.val{:,:}).' double(Events.Timestamp{1}(Trial,:))];
-    end
-    CondInfo(i,:)= vertcat(Analyzer.loops.conds{1,i}.val{:,:}).';
-end
-Parmass = Analyzer.L.param;
-VarValDims = 1;
-for i=1:length(Parmass(1,:))
-    VarValDims = VarValDims*(length(eval(Parmass{1,i}{2})));
-end
 
-for site = 1:length(Spikes)
-Units = unique(Spikes{site}.Unit);
-Units = sort(Units);
-if Units(1) == 0
-    Units = Units(2:end);
-end
-Units = length(Units);
-Data{site}.Spiking=cell(VarValDims, Units, Reps);
-Data{site}.BSpiking=cell(Units, BReps);
-Repetition = ones(VarValDims,1);
-for T = 1:length(TrialInfo(:,1))
-    if not(isequal(TrialInfo(T,1:length(Parmass(1,:))), (zeros(1,length(Parmass(1,:))) -1)))
-    for Unit=1:Units
-    VariableIndex = VarIndx(TrialInfo(T,1:length(Parmass(1,:))));
-    Data{site}.Spiking{VariableIndex,Unit,Repetition(VariableIndex)} = double(Spikes{site}.TimeStamp(find(Spikes{site}.Unit == Unit & Spikes{site}.TimeStamp > TrialInfo(T,length(Parmass(1,:))+1) & Spikes{site}.TimeStamp < TrialInfo(T,length(Parmass(1,:))+4))))-TrialInfo(T,length(Parmass(1,:))+2);
-    end
-    Repetition(VariableIndex) = Repetition(VariableIndex)+1;
-    end
-end
-Repetition = 1;
-for T = 1:length(TrialInfo(:,1))
-    if TrialInfo(T,1:length(Parmass(1,:))) == zeros(1,length(Parmass(1,:))) -1
-    for Unit=1:Units
-    Data{site}.BSpiking{Unit,Repetition} = double(Spikes{site}.TimeStamp(find(Spikes{site}.Unit == Unit & Spikes{site}.TimeStamp > TrialInfo(T,length(Parmass(1,:))+1) & Spikes{site}.TimeStamp < TrialInfo(T,length(Parmass(1,:))+4))))-TrialInfo(T,length(Parmass(1,:))+2);
-    end
-    Repetition = Repetition+1;
-    end
-end
-
-Paramss = Analyzer.L.param;
-FixIndx = zeros(length(Paramss(1,:)),1)-1;
-for Unit = 1:length(UnitType{site})
-%Calc Blank Responses
-RepVal = [];
-    for rep = 1:length(Data{site}.BSpiking(1,:))
-        Spks = [Data{site}.BSpiking{Unit,rep}];
-        RepVal(rep) =((sum(Spks>0 & Spks < 30000*Analyzer.P.param{1,3}{3})/(Analyzer.P.param{1,3}{3}))-((sum(Spks<0))/Analyzer.P.param{1,1}{3}));
-    end
-Data{site}.BRespMean(Unit) = mean(RepVal);
-Data{site}.BRespVar(Unit) = std(RepVal)/sqrt(length(RepVal));
-Data{site}.AllBResp(:,Unit) = RepVal;
-
-%Calc responses for all conditions
-for i = 1:length(Data{site}.Spiking(:,1,1))
-RepVal = [];
-    for rep = 1:length(Data{site}.Spiking(1,1,:))
-        Spks = [Data{site}.Spiking{i,Unit,rep}];
-        RepVal(rep) =((sum(Spks>0 & Spks < 30000*Analyzer.P.param{1,3}{3})/(Analyzer.P.param{1,3}{3}))-((sum(Spks<0))/Analyzer.P.param{1,1}{3}));
-    end
-Data{site}.RespVar(Unit,i) = std(RepVal)/sqrt(length(RepVal));
-Data{site}.RespMean(Unit,i) = mean(RepVal);
-Data{site}.AllResp(Unit,:,i) = RepVal;
-end
-end
-end
-RespFunc = [0 30000*Analyzer.P.param{1,3}{3} 0 -30000*Analyzer.P.param{1,1}{3}];
-Values = cell(length(Paramss(1,:)),1);
-for i = 1:length(Paramss(1,:))
-    Params = Paramss{1,i};
-    Variables{i} =Params{1,1};
-    Values{i} = eval(Params{1,2});
+RespFunc = [0 samplingFreq*StimT 0 -samplingFreq*PreD];
+Variables = Parmass;
+Values = cell(length(Variables),1);
+for ii = 1:length(Variables)
+    Values{ii} = unique(CondInfo(:,ii));
 end
 
 set(handles.textStatus,'string','Formatting complete. Saving data file...');
@@ -760,9 +780,9 @@ end
 
 [num,txt,raw] = xlsread([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],1);
 Rows = [];
-for i = 1:length(raw(:,1))
-    if isequal(raw(i,3),{[lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
-        Rows = [Rows i];
+for ii = 1:length(raw(:,1))
+    if isequal(raw(ii,3),{[lower(get(handles.Animal,'string')) '_' get(handles.Unit,'String') '_' get(handles.Exp,'String')]})
+        Rows = [Rows ii];
     end
 end
 if isempty(Rows)
@@ -784,14 +804,14 @@ raw(Rows(1):Rows(1)+length(UnitType{1})-1,4) = raw(Rows(1),4);
 raw(Rows(1):Rows(1)+length(UnitType{1})-1,5) = raw(Rows(1),5);
 raw(Rows(1):Rows(1)+length(UnitType{1})-1,6) = raw(Rows(1),6);
 raw(Rows(1):Rows(1)+length(UnitType{1})-1,11:14) = repmat([{3} {date} {3} {date}],length(UnitType{1}),1);
-for i = 1:length(UnitType{1})
-    raw(Rows(1)+i-1,7) = {i};
-    raw(Rows(1)+i-1,8) = {UnitType{1}(i)};
-    Spks = Spikes{1}.Unit == i;
+for ii = 1:length(UnitType{1})
+    raw(Rows(1)+ii-1,7) = {ii};
+    raw(Rows(1)+ii-1,8) = {UnitType{1}(ii)};
+    Spks = Spikes{1}.Unit == ii;
     TStmps = double(Spikes{1}.TimeStamp(Spks));
     ISI = TStmps(2:end) - TStmps(1:end-1);
     Cont = sum(ISI<45)/length(ISI);
-    raw(Rows(1)+i-1,9) = {Cont};
+    raw(Rows(1)+ii-1,9) = {Cont};
 end
 xlswrite([settings.outSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1);
 xlswrite([settings.outShareSummaryFilePath settings.filepathSlash settings.summaryFileName],raw,1);
