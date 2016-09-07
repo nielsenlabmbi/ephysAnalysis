@@ -368,7 +368,7 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
     
     trialList = getcondtrial(Analyzer);
     
-    Times = zeros(length(trialList),1);
+    Times = zeros(length(trialList)*4,1);
     
     %with pulses
     if get(handles.Pulses,'Value')
@@ -537,6 +537,7 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
     end
     
     % with digital input
+    Times = zeros(length(trialList)*4,1);
     Pulses = double(NEV.Data.SerialDigitalIO.TimeStamp);
     Pulses = sort(Pulses);
     UnpDta = abs(diff(double(NEV.Data.SerialDigitalIO.UnparsedData')));
@@ -558,7 +559,6 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
         Pulses([find(dPulses<2) find(dPulses<5)+1]) = [];
         UnpDta([find(dPulses<2) find(dPulses<5)-1]) = [];
         Pulses(find((UnpDta ~= 8)&(UnpDta ~= 4)&(UnpDta ~= 24))+1) = [];
-        Times = zeros(size(domval,1)*Reps*4 + BReps*4,1);
 %         Times = zeros(((length(Analyzer.loops.conds)-1)*Reps*4+BReps*4),1);
         if length(Pulses) ~= length(Times)
             warndlg('Digital pulses are more than 4 X NunberOfTrials using expected times')
