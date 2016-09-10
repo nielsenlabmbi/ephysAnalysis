@@ -1351,7 +1351,7 @@ load(getSettingsPath);
         '*.*',                   'All Files (*.*)'}, ...
         'Pick spikes file');
 
-if isempty(pathname) || isempty(filename) || pathname == 0 || filename == 0
+if isempty(pathname) || isempty(filename) || (isnumeric(pathname) && pathname == 0) || (isnumeric(filename) && filename == 0)
     return;
 end
 
