@@ -625,10 +625,10 @@ set(handles.textStatus,'string','Now formatting data...'); drawnow
 triallist=getcondtrial(Analyzer);
 
 nReps = getnorepeats(1,Analyzer);
-nBReps = getnorepeats(blankid,Analyzer);
 nConds = size(CondInfo,1);
 
 blankTrialNumbers = find(triallist == blankid);
+nBReps = length(blankTrialNumbers);
 
 % for tt=1:length(blankTrialNumbers)
 %     TrialInfo(blankTrialNumbers(tt),:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(blankTrialNumbers(tt),:))];
@@ -649,9 +649,9 @@ blankTrialNumbers = find(triallist == blankid);
 TrialInfo = -1*ones(length(triallist),6);
 for tt=1:length(triallist)
     if triallist(tt) == blankid
-        TrialInfo(triallist(tt),:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(triallist(tt),:))];
+        TrialInfo(tt,:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(tt,:))];
     else
-        TrialInfo(triallist(tt),:) = [CondInfo(triallist(tt),:) double(Events.Timestamp{1}(triallist(tt),:))];
+        TrialInfo(tt,:) = [CondInfo(triallist(tt),:) double(Events.Timestamp{1}(tt,:))];
     end
 end
 
