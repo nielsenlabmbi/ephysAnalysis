@@ -626,10 +626,10 @@ triallist=getcondtrial(Analyzer);
 
 nReps = getnorepeats(1,Analyzer);
 nConds = size(CondInfo,1);
-
+try
 blankTrialNumbers = find(triallist == blankid);
 nBReps = length(blankTrialNumbers);
-
+end
 % for tt=1:length(blankTrialNumbers)
 %     TrialInfo(blankTrialNumbers(tt),:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(blankTrialNumbers(tt),:))];
 % end
@@ -646,9 +646,9 @@ nBReps = length(blankTrialNumbers);
 %         end
 %     end
 % end
-TrialInfo = -1*ones(length(triallist),6);
+TrialInfo = -1*ones(length(triallist),size(CondInfo,2) + size(double(Events.Timestamp{1}),2));
 for tt=1:length(triallist)
-    if triallist(tt) == blankid
+    if ~isempty(blankid) && triallist(tt) == blankid
         TrialInfo(tt,:) = [(zeros(length(Parmass),1)-1).'  double(Events.Timestamp{1}(tt,:))];
     else
         TrialInfo(tt,:) = [CondInfo(triallist(tt),:) double(Events.Timestamp{1}(tt,:))];
@@ -676,7 +676,9 @@ for site = 1:length(Spikes)
     end
     Units = length(Units);
     Data{site}.Spiking=cell(nConds, Units, nReps);
+    try
     Data{site}.BSpiking=cell(Units, nBReps);
+    end
     Repetition = ones(nConds,1);
     for T = 1:length(TrialInfo(:,1))
         if not(isequal(TrialInfo(T,1:length(Parmass(1,:))), (zeros(1,length(Parmass(1,:))) -1)))
@@ -709,6 +711,7 @@ for site = 1:length(Spikes)
     for Unit = 1:length(UnitType{site})
         %Calc Blank Responses
         RepVal = [];
+        try
             for rep = 1:length(Data{site}.BSpiking(1,:))
                 Spks = [Data{site}.BSpiking{Unit,rep}];
                 RepVal(rep) =((sum(Spks>0 & Spks < samplingFreq*StimT)/StimT)-((sum(Spks<0))/PreD));
@@ -716,7 +719,7 @@ for site = 1:length(Spikes)
         Data{site}.BRespMean(Unit) = mean(RepVal);
         Data{site}.BRespVar(Unit) = std(RepVal)/sqrt(length(RepVal));
         Data{site}.AllBResp(:,Unit) = RepVal;
-
+        end
         %Calc responses for all conditions
         for ii = 1:length(Data{site}.Spiking(:,1,1))
             RepVal = [];

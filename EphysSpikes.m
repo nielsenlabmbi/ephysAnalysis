@@ -364,8 +364,9 @@ function buttonSaveData_Callback(hObject, eventdata, handles)
 
     Reps = getnorepeats(1,Analyzer);
     [~,domval,blankid]=getdomainvalue(Analyzer);
+    try
     BReps = getnorepeats(blankid,Analyzer);
-    
+    end
     trialList = getcondtrial(Analyzer);
     
     Times = zeros(length(trialList)*4,1);
